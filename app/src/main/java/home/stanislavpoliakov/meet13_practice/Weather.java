@@ -29,5 +29,5 @@ public class Weather {
 
     @Embedded (prefix = "flags")
     public WFlags flags;
-    public int offset;
+    public double offset;
 }

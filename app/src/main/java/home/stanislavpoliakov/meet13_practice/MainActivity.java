@@ -13,30 +13,18 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Scanner;
-
-import javax.net.ssl.HttpsURLConnection;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import home.stanislavpoliakov.meet13_practice.response_data.WDailyData;
-import retrofit2.Response;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "meet13_logs";
@@ -45,6 +33,9 @@ public class MainActivity extends AppCompatActivity {
     private WorkThread workThread = new WorkThread();
     private WDailyData[] data;
     private MyAdapter mAdapter;
+    private Map<String, String> cities = new HashMap<>();
+    private String cityName;
+    private String cityLocation;
 
     private class WorkThread extends HandlerThread {
         private static final int FETCH_WEATHER_DATA = 1;
@@ -66,23 +57,24 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void handleMessage(Message msg) {
-                    Weather weather;
-                    Message message;
                     switch (msg.what) {
                         case FETCH_WEATHER_DATA:
-                            weather = getWeatherFromNetwork();
-                            message = mHandler.obtainMessage(SAVE_WEATHER_DATA, weather);
+                            Weather weather = getWeatherFromNetwork();
+                            Log.d(TAG, "handleMessage: tmz = " + weather.timezone);
+                            Message message = mHandler.obtainMessage(SAVE_WEATHER_DATA, weather);
                             mHandler.sendMessage(message);
                             break;
                         case SAVE_WEATHER_DATA:
-                            weather = (Weather) msg.obj;
-                            saveWeatherData(weather);
+                            Weather weather1 = (Weather) msg.obj;
+                            saveWeatherData(weather1);
+                            Log.d(TAG, "handleMessage: tmz1 = " + weather1.timezone);
                             mHandler.sendEmptyMessage(RETRIEVE_BRIEF_INFO);
                             break;
                         case RETRIEVE_BRIEF_INFO:
-                            weather = dao.getWeather();
-                            data = weather.daily.data;
-                            updateRecycler(weather.timezone);
+                            Weather weather2 = dao.getWeather();
+                            data = weather2.daily.data;
+                            Log.d(TAG, "handleMessage: tmz2 = " + weather2.timezone);
+                            updateRecycler(weather2.timezone);
                             break;
                     }
                 }
@@ -94,11 +86,16 @@ public class MainActivity extends AppCompatActivity {
         }
 
         private Weather getWeatherFromNetwork() {
-            return networkService.getWeatherFromNetwork();
+            return networkService.getWeatherFromNetwork(cityLocation);
         }
 
         private void saveWeatherData(Weather weather) {
-            dao.insert(weather);
+            Weather currentWeather = dao.getWeather();
+            if (currentWeather == null) Log.d(TAG, "saveWeatherData: insert = " + dao.insert(weather));
+            else {
+                weather.id = currentWeather.id;
+                Log.d(TAG, "saveWeatherData: updated = " + dao.update(weather));
+            }
         }
     }
 
@@ -143,12 +140,36 @@ public class MainActivity extends AppCompatActivity {
                 .build();
         dao = database.getWeatherDAO();
 
-        Button getButton = findViewById(R.id.getButton);
-        getButton.setOnClickListener((v) -> {
-            workThread.fetchWeather();
+        cities.put("Москва", "55.7522200, 37.6155600");
+        cities.put("Владивосток", "43.1056200, 131.8735300");
+        cities.put("Бангкок", "13.7539800, 100.5014400");
+        cities.put("Бали", "22.6485900, 88.3411500");
+        cities.put("Дубай", "25.0657000, 55.1712800");
+        cities.put("Санта-Крус-де-Тенерифе", "28.4682400, -16.2546200");
+        cities.put("Нью-Йорк", "40.7142700, -74.0059700");
+        Spinner spinner = findViewById(R.id.spinner);
+
+        ArrayAdapter<String> spinnerAdapter = new ArrayAdapter<String>
+                (this, android.R.layout.simple_spinner_dropdown_item, new ArrayList<>(cities.keySet()));
+        spinner.setAdapter(spinnerAdapter);
+        spinner.setSelection(spinnerAdapter.getPosition("Москва"));
+        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                cityName = (String) spinner.getSelectedItem();
+                //Log.d(TAG, "onItemSelected: Name = " + cityName);
+                cityLocation = cities.get(cityName);
+                /*cityLocation = Double.parseDouble(locationString.substring(0, locationString.indexOf(",")));
+                cityLocation = Double.parseDouble(locationString.substring(locationString.indexOf(",") + 1));*/
+                //Log.d(TAG, "onItemSelected: lat = " + cityLocation[0] + " / lon = " + cityLocation[1]);
+                workThread.fetchWeather();
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+            }
         });
-
-
     }
 
     private void updateRecycler(String city) {
@@ -157,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
 
         runOnUiThread(() -> {
             if (mAdapter == null) initRecyclerView();
-            else mAdapter.setData(data);
+            else mAdapter.onNewData(data);
         });
 
     }

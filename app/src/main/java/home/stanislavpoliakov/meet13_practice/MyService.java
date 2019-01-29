@@ -34,16 +34,16 @@ public class MyService extends Service {
         }
     }
 
-    public Weather getWeatherFromNetwork() {
+    public Weather getWeatherFromNetwork(String locationPoint) {
         Log.d(TAG, "getWeatherFromNetwork: Thread = " + Thread.currentThread());
-        Response<Weather> weatherResponse = getWeather();
+        Response<Weather> weatherResponse = getWeather(locationPoint);
         return weatherResponse.body();
     }
 
-    private Response<Weather> getWeather() {
+    private Response<Weather> getWeather(String locationPoint) {
         RetrofitHelper helper = new RetrofitHelper();
         try {
-            return helper.getService().getWeather().execute();
+            return helper.getService().getWeather(locationPoint).execute();
         } catch (IOException ex) {
             Log.w(TAG, "Response Error ", ex);
         }

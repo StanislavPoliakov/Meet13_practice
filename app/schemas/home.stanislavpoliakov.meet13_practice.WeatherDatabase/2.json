@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "319606716f2d658e441c5498b8ecaf95",
+    "identityHash": "c036ec713c89a48334c28fb6f6ed9e3e",
     "entities": [
       {
         "tableName": "weather",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `timezone` TEXT, `offset` INTEGER NOT NULL, `currentlytime` INTEGER, `currentlysummary` TEXT, `currentlyicon` TEXT, `currentlyprecipIntensity` REAL, `currentlyprecipProbability` REAL, `currentlyprecipType` TEXT, `currentlytemperature` REAL, `currentlyapparentTemperature` REAL, `currentlydewPoint` REAL, `currentlyhumidity` REAL, `currentlypressure` REAL, `currentlywindSpeed` REAL, `currentlywindGust` REAL, `currentlywindBearing` REAL, `currentlycloudCover` REAL, `currentlyuvIndex` REAL, `currentlyvisibility` REAL, `currentlyozone` REAL, `hourlysummary` TEXT, `hourlyicon` TEXT, `hourlydata` TEXT, `dailysummary` TEXT, `dailyicon` TEXT, `dailydata` TEXT, `flagssources` TEXT, `flagsnearestStation` REAL, `flagsunits` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `timezone` TEXT, `offset` REAL NOT NULL, `currentlytime` INTEGER, `currentlysummary` TEXT, `currentlyicon` TEXT, `currentlyprecipIntensity` REAL, `currentlyprecipProbability` REAL, `currentlyprecipType` TEXT, `currentlytemperature` REAL, `currentlyapparentTemperature` REAL, `currentlydewPoint` REAL, `currentlyhumidity` REAL, `currentlypressure` REAL, `currentlywindSpeed` REAL, `currentlywindGust` REAL, `currentlywindBearing` REAL, `currentlycloudCover` REAL, `currentlyuvIndex` REAL, `currentlyvisibility` REAL, `currentlyozone` REAL, `hourlysummary` TEXT, `hourlyicon` TEXT, `hourlydata` TEXT, `dailysummary` TEXT, `dailyicon` TEXT, `dailydata` TEXT, `flagssources` TEXT, `flagsnearestStation` REAL, `flagsunits` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -35,7 +35,7 @@
           {
             "fieldPath": "offset",
             "columnName": "offset",
-            "affinity": "INTEGER",
+            "affinity": "REAL",
             "notNull": true
           },
           {
@@ -213,7 +213,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, \"319606716f2d658e441c5498b8ecaf95\")"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, \"c036ec713c89a48334c28fb6f6ed9e3e\")"
     ]
   }
 }

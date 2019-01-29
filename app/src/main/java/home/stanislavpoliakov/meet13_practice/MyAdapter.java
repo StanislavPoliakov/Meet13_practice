@@ -1,19 +1,27 @@
 package home.stanislavpoliakov.meet13_practice;
 
 import android.support.annotation.NonNull;
+import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 import home.stanislavpoliakov.meet13_practice.response_data.WDailyData;
 
 public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
+    private static final String TAG = "meet13_logs";
     private WDailyData[] data;
 
     public MyAdapter(WDailyData[] data) {
+        //this.data = cloneArray(data);
         this.data = data.clone();
+
+       // this.data = Arrays.copyOf(data, data.length);
     }
 
     @NonNull
@@ -25,9 +33,23 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull MyViewHolder holder, int position) {
-        holder.dailyTime.setText(String.valueOf(data[position].time));
-        holder.dailyTempMin.setText(String.valueOf(data[position].temperatureMin));
-        holder.dailyTempMax.setText(String.valueOf(data[position].temperatureMax));
+        /*Calendar calendar = Calendar.getInstance();
+        calendar.setTimeInMillis(data[position].time);*/
+        Date date = new Date(data[position].time * 1000);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM");
+        String dateString = dateFormat.format(date);
+        //Log.d(TAG, "onBindViewHolder: date = " + dateString);
+        holder.dailyTime.setText(dateString);
+
+        //SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss", Locale.FRANCE);
+
+        double fMin = data[position].temperatureMin;
+        long tempMin = Math.round((fMin - 32) * 5 / 9);
+
+        double fMax = data[position].temperatureMax;
+        long tempMax = Math.round((fMax - 32) * 5 / 9);
+        holder.dailyTempMin.setText(String.valueOf(tempMin + "˚"));
+        holder.dailyTempMax.setText(String.valueOf(tempMax) + "˚");
     }
 
     @Override
@@ -35,8 +57,12 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
         return data.length;
     }
 
-    public void setData(WDailyData[] data) {
-        this.data = data.clone();
+    public void onNewData(WDailyData[] newData) {
+        DiffUtil.DiffResult result = DiffUtil.calculateDiff(new DiffCall(data, newData));
+        result.dispatchUpdatesTo(this);
+
+        //data = cloneArray(newData);
+        data = newData.clone();
         notifyDataSetChanged();
     }
 
