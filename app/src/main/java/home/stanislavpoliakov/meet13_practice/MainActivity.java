@@ -8,6 +8,8 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Message;
 import android.os.Process;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -26,7 +28,7 @@ import java.util.Map;
 
 import home.stanislavpoliakov.meet13_practice.response_data.WDailyData;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements Callback{
     private static final String TAG = "meet13_logs";
     private WeatherDAO dao;
     private MyService networkService;
@@ -36,6 +38,46 @@ public class MainActivity extends AppCompatActivity {
     private Map<String, String> cities = new HashMap<>();
     private String cityName;
     private String cityLocation;
+    private String timeZone;
+
+    @Override
+    public void viewHolderClicked(int itemPosition) {
+        WDailyData posData = data[itemPosition];
+
+        Bundle detailInfo = new Bundle();
+        detailInfo.putLong("time", posData.time);
+        detailInfo.putString("summary", posData.summary);
+        detailInfo.putLong("sunriseTime", posData.sunriseTime);
+        detailInfo.putLong("sunsetTime", posData.sunsetTime);
+        detailInfo.putDouble("precipIntensity", posData.precipIntensity);
+        detailInfo.putDouble("precipProbability", posData.precipProbability);
+        detailInfo.putDouble("precipIntensityMax", posData.precipIntensityMax);
+        detailInfo.putLong("precipIntensityMaxTime", posData.precipIntensityMaxTime);
+        detailInfo.putString("precipType", posData.precipType);
+        detailInfo.putDouble("dewPoint", posData.dewPoint);
+        detailInfo.putDouble("humidity", posData.humidity);
+        detailInfo.putDouble("pressure", posData.pressure);
+        detailInfo.putDouble("windSpeed", posData.windSpeed);
+        detailInfo.putDouble("windBearing", posData.windBearing);
+        detailInfo.putDouble("windGust", posData.windGust);
+        detailInfo.putDouble("cloudCover", posData.cloudCover);
+        detailInfo.putDouble("uvIndex", posData.uvIndex);
+        detailInfo.putDouble("temperatureMin", posData.temperatureMin);
+        detailInfo.putLong("temperatureMinTime", posData.temperatureMinTime);
+        detailInfo.putDouble("temperatureMax", posData.temperatureMax);
+        detailInfo.putLong("temperatureMaxTime", posData.temperatureMaxTime);
+        detailInfo.putString("timeZone", timeZone);
+
+        Log.d(TAG, "viewHolderClicked: max = " + posData.temperatureMaxTime);
+        Log.d(TAG, "viewHolderClicked: min = " + posData.temperatureMinTime);
+
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        DetailFragment fragment = DetailFragment.newInstance();
+        fragment.setArguments(detailInfo);
+        fragmentManager.beginTransaction()
+                .add(fragment, "Details")
+                .commit();
+    }
 
     private class WorkThread extends HandlerThread {
         private static final int FETCH_WEATHER_DATA = 1;
@@ -43,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
         private static final int RETRIEVE_BRIEF_INFO = 3;
         private static final int RETRIEVE_DETAIL_INFO = 4;
         private Handler mHandler;
+
 
 
 
@@ -60,20 +103,21 @@ public class MainActivity extends AppCompatActivity {
                     switch (msg.what) {
                         case FETCH_WEATHER_DATA:
                             Weather weather = getWeatherFromNetwork();
-                            Log.d(TAG, "handleMessage: tmz = " + weather.timezone);
+                            //Log.d(TAG, "handleMessage: tmz = " + weather.timezone);
                             Message message = mHandler.obtainMessage(SAVE_WEATHER_DATA, weather);
                             mHandler.sendMessage(message);
                             break;
                         case SAVE_WEATHER_DATA:
                             Weather weather1 = (Weather) msg.obj;
                             saveWeatherData(weather1);
-                            Log.d(TAG, "handleMessage: tmz1 = " + weather1.timezone);
+                            //Log.d(TAG, "handleMessage: tmz1 = " + weather1.timezone);
                             mHandler.sendEmptyMessage(RETRIEVE_BRIEF_INFO);
                             break;
                         case RETRIEVE_BRIEF_INFO:
                             Weather weather2 = dao.getWeather();
                             data = weather2.daily.data;
-                            Log.d(TAG, "handleMessage: tmz2 = " + weather2.timezone);
+                            //Log.d(TAG, "handleMessage: tmz2 = " + weather2.timezone);
+                            timeZone = weather2.timezone;
                             updateRecycler(weather2.timezone);
                             break;
                     }
@@ -91,10 +135,10 @@ public class MainActivity extends AppCompatActivity {
 
         private void saveWeatherData(Weather weather) {
             Weather currentWeather = dao.getWeather();
-            if (currentWeather == null) Log.d(TAG, "saveWeatherData: insert = " + dao.insert(weather));
+            if (currentWeather == null) dao.insert(weather);
             else {
                 weather.id = currentWeather.id;
-                Log.d(TAG, "saveWeatherData: updated = " + dao.update(weather));
+                dao.update(weather);
             }
         }
     }
@@ -110,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
     private ServiceConnection serviceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
-            Log.d(TAG, "onServiceConnected: ");
+            //Log.d(TAG, "onServiceConnected: ");
             networkService = ((MyService.NetworkBinder) service).getService();
             //workThread.doWork();
 
@@ -118,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
-            Log.d(TAG, "onServiceDisconnected: ");
+            //Log.d(TAG, "onServiceDisconnected: ");
         }
     };
 
@@ -185,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initRecyclerView() {
         RecyclerView recyclerView = findViewById(R.id.recyclerView);
-        mAdapter = new MyAdapter(data);
+        mAdapter = new MyAdapter(this, data);
         recyclerView.setAdapter(mAdapter);
         LinearLayoutManager layoutManager = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
         recyclerView.setLayoutManager(layoutManager);

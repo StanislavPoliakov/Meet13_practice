@@ -1,5 +1,7 @@
 package home.stanislavpoliakov.meet13_practice;
 
+import android.app.FragmentManager;
+import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.util.DiffUtil;
 import android.support.v7.widget.RecyclerView;
@@ -16,10 +18,12 @@ import home.stanislavpoliakov.meet13_practice.response_data.WDailyData;
 public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
     private static final String TAG = "meet13_logs";
     private WDailyData[] data;
+    private Callback mActivity;
 
-    public MyAdapter(WDailyData[] data) {
+    public MyAdapter(Context context, WDailyData[] data) {
         //this.data = cloneArray(data);
         this.data = data.clone();
+        this.mActivity = (Callback) context;
 
        // this.data = Arrays.copyOf(data, data.length);
     }
@@ -45,11 +49,13 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
 
         double fMin = data[position].temperatureMin;
         long tempMin = Math.round((fMin - 32) * 5 / 9);
+        String tMinString = (tempMin > 0) ? ("+" + String.valueOf(tempMin)) : String.valueOf(tempMin);
 
         double fMax = data[position].temperatureMax;
         long tempMax = Math.round((fMax - 32) * 5 / 9);
-        holder.dailyTempMin.setText(String.valueOf(tempMin + "˚"));
-        holder.dailyTempMax.setText(String.valueOf(tempMax) + "˚");
+        String tMaxString = (tempMax > 0) ? ("+" + String.valueOf(tempMax)) : String.valueOf(tempMax);
+        holder.dailyTempMin.setText(String.valueOf(tMinString + "˚С"));
+        holder.dailyTempMax.setText(String.valueOf(tMaxString) + "˚С");
     }
 
     @Override
@@ -74,6 +80,10 @@ public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
             dailyTime = itemView.findViewById(R.id.dailyTime);
             dailyTempMin = itemView.findViewById(R.id.dailyTemperatureMin);
             dailyTempMax = itemView.findViewById(R.id.dailyTemperatureMax);
+
+            itemView.setOnClickListener((v -> {
+                mActivity.viewHolderClicked(getAdapterPosition());
+            }));
         }
     }
 }

@@ -24,7 +24,7 @@ public class RetrofitHelper {
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
 
-        Log.d(TAG, "getService: Thread = " + Thread.currentThread());
+        //Log.d(TAG, "getService: Thread = " + Thread.currentThread());
         return retrofit.create(RetrofitWebService.class);
     }
 }

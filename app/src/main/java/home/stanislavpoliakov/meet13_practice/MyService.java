@@ -35,7 +35,7 @@ public class MyService extends Service {
     }
 
     public Weather getWeatherFromNetwork(String locationPoint) {
-        Log.d(TAG, "getWeatherFromNetwork: Thread = " + Thread.currentThread());
+        //Log.d(TAG, "getWeatherFromNetwork: Thread = " + Thread.currentThread());
         Response<Weather> weatherResponse = getWeather(locationPoint);
         return weatherResponse.body();
     }
