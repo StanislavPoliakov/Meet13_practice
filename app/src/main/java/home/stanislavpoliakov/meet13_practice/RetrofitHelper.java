@@ -12,7 +12,6 @@ public class RetrofitHelper {
     private static final String TAG = "meet13_logs";
     private static final String BASE_URL = "https://api.darksky.net/forecast/";
     private static final String TOKEN = "2028fd6e9ece283ff30f8a5a8f2597db/";
-    //private static final String MOSCOW = "55.7522200,37.6155600/";
 
     public RetrofitWebService getService() {
         Gson gson = new GsonBuilder()
@@ -24,7 +23,6 @@ public class RetrofitHelper {
                 .addConverterFactory(GsonConverterFactory.create(gson))
                 .build();
 
-        //Log.d(TAG, "getService: Thread = " + Thread.currentThread());
         return retrofit.create(RetrofitWebService.class);
     }
 }

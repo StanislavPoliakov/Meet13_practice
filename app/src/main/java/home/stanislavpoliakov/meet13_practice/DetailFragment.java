@@ -6,33 +6,43 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.DialogFragment;
-import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.Date;
-import java.util.TimeZone;
+
+import static home.stanislavpoliakov.meet13_practice.Convert.toCelsius;
+import static home.stanislavpoliakov.meet13_practice.Convert.toDirection;
+import static home.stanislavpoliakov.meet13_practice.Convert.toFormattedZoneTime;
+import static home.stanislavpoliakov.meet13_practice.Convert.toFormattedZoneDate;
+import static home.stanislavpoliakov.meet13_practice.Convert.toIntensity;
+import static home.stanislavpoliakov.meet13_practice.Convert.toMercury;
+import static home.stanislavpoliakov.meet13_practice.Convert.toMeterPerSecond;
+import static home.stanislavpoliakov.meet13_practice.Convert.toPercent;
 
 
 /**
- * A simple {@link Fragment} subclass.
+ * Класс фрагмента детальной информации
  */
 public class DetailFragment extends DialogFragment {
     private static final String TAG = "meet13_logs";
+    private ZoneId timeZone;
 
+    /**
+     * Получаем объект класса в статическом методе для FragmentManager
+     * @return
+     */
     public static DetailFragment newInstance() {
         return new DetailFragment();
     }
 
+    /**
+     * Растягиваем фрагмент по ширине на размер экрана, по высоте - на размер переменных
+     */
     @Override
     public void onStart() {
         super.onStart();
@@ -57,137 +67,142 @@ public class DetailFragment extends DialogFragment {
         initViews(view);
     }
 
+
+
+    /**
+     * Инициализируем и наполняем UI-компоненты
+     * @param view, в которой эти компоненты представлены
+     */
     private void initViews(View view) {
+        long unixTime;
+        String timeString;
+        double value, intensity, f;
+
+        // Bundle с подробной информацией о погоде, переданный в качестве аргументов фрагмента
         Bundle args = getArguments();
-        String timeZone = args.getString("timeZone");
+
+        // Временная зона по IANA Time Zone Database
+        timeZone = ZoneId.of(args.getString("timeZone"));
         StringBuilder builder = new StringBuilder();
 
+        // Элемент текущей даты
         TextView timeView = view.findViewById(R.id.timeView);
-        long time = args.getLong("time");
-        Date date = new Date(time * 1000);
+        unixTime = args.getLong("time");
+        timeView.setText(toFormattedZoneDate(unixTime, timeZone));
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
-        //dateFormat.setTimeZone(TimeZone.getTimeZone(timeZone));
-
-        String dateString = dateFormat.format(date);
-        timeView.setText(dateString);
-
+        // Элемент краткой сводки (на английском)
         TextView summaryView = view.findViewById(R.id.summaryView);
-        summaryView.setText(args.getString("summary"));
+        String summary = args.getString("summary");
+        summaryView.setText(summary);
 
+        // Время восхода солнца
         TextView sunriseView = view.findViewById(R.id.sunriseView);
-        time = args.getLong("sunriseTime");
-        date = new Date(time * 1000);
-        dateFormat = new SimpleDateFormat("HH:mm");
-        //ZonedDateTime dateTime = ZonedDateTime.of(date.toInstant().)
-        ZonedDateTime dateTime = date.toInstant().atZone(ZoneId.of(timeZone));
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm");
-        Log.d(TAG, "initViews: dateTime = " + formatter.format(dateTime));
-        dateString = formatter.format(dateTime);
-        sunriseView.setText(dateString);
+        unixTime = args.getLong("sunriseTime");
+        sunriseView.setText(toFormattedZoneTime(unixTime, timeZone));
 
+        // Время заката солнца
         TextView sunsetView = view.findViewById(R.id.sunsetView);
-        time = args.getLong("sunsetTime");
-        date = new Date(time * 1000);
-        dateTime = date.toInstant().atZone(ZoneId.of(timeZone));
-        dateString = formatter.format(dateTime);
-        sunsetView.setText(dateString);
+        unixTime = args.getLong("sunsetTime");
+        sunsetView.setText(toFormattedZoneTime(unixTime, timeZone));
 
-        TextView precipType = view.findViewById(R.id.precipType);
-        builder.append("Тип осадков: ");
-        builder.append(args.get("precipType"));
-        precipType.setText(builder.toString());
+        // Тип осадков
+        TextView precipTypeView = view.findViewById(R.id.precipType);
+        String precipType = args.getString("precipType");
+        builder.append("Тип осадков: ")
+                .append(precipType);
+        precipTypeView.setText(builder.toString());
         builder.setLength(0);
 
+        // Вероятность осадков и их интенсивность
         TextView precip = view.findViewById(R.id.precip);
-        builder.append("Вероятность осадков: ");
-        builder.append((int)(args.getDouble("precipProbability") * 100) + "%");
-        builder.append(", интенсивность: ");
-        builder.append(String.format("%.2f", args.getDouble("precipIntensity") * 25.4)).append(" мм/ч");
+        value = args.getDouble("precipProbability");
+        intensity = args.getDouble("precipIntensity");
+        builder.append("Вероятность осадков: ")
+                .append(toPercent(value))
+                .append(", интенсивность: ")
+                .append(toIntensity(intensity));
         precip.setText(builder.toString());
         builder.setLength(0);
 
+        // В какое время максимальное количество осадков
         TextView precipMax = view.findViewById(R.id.precipMax);
-        builder.append("Максимальное количестов осадков: ");
-        builder.append(String.format("%.2f", args.getDouble("precipIntensityMax") * 25.4)).append(" мм/ч");
-        builder.append(", в ");
-        time = args.getLong("precipIntensityMaxTime");
-        date = new Date(time * 1000);
-        dateString = dateFormat.format(date);
-        builder.append(dateString);
+        intensity = args.getDouble("precipIntensityMax");
+        unixTime = args.getLong("precipIntensityMaxTime");
+        builder.append("Максимальное количестов осадков: ")
+                .append(toIntensity(intensity))
+                .append(", в ")
+                .append(toFormattedZoneTime(unixTime, timeZone));
         precipMax.setText(builder.toString());
         builder.setLength(0);
 
+        // Влажность воздуха и температура точки росы
         TextView humDew = view.findViewById(R.id.humDew);
-        builder.append("Влажность воздуха: ");
-        builder.append((int) (args.getDouble("humidity") * 100) + "%");
-        builder.append(", точка росы при ");
-        double f = args.getDouble("dewPoint");
-        int t =  (int) Math.round((f - 32) * 5 / 9);
-        builder.append(t + "˚С");
+        value = args.getDouble("humidity");
+        f = args.getDouble("dewPoint");
+        builder.append("Влажность воздуха: ")
+                .append(toPercent(value))
+                .append(", точка росы при ")
+                .append(toCelsius(f));
         humDew.setText(builder.toString());
         builder.setLength(0);
 
+        // Давление
         TextView pressure = view.findViewById(R.id.pressure);
-        builder.append("Давление: ");
-        builder.append(Math.round(args.getDouble("pressure") * 0.7494) + " мм.рт.ст.");
+        value = args.getDouble("pressure");
+        builder.append("Давление: ")
+                .append(toMercury(value));
         pressure.setText(builder.toString());
         builder.setLength(0);
 
+        // Направление ветра, скорость и скорость в порывах
         TextView wind = view.findViewById(R.id.wind);
-        int windNum = (int) Math.round(args.getDouble("windBearing") / 22.5);
-        String windChars;
-        if (windNum >= 15 || windNum < 1) windChars = "С";
-        else if (windNum < 3) windChars = "С-В";
-        else if (windNum < 5) windChars = "В";
-        else if (windNum < 7) windChars = "Ю-В";
-        else if (windNum < 9) windChars = "Ю";
-        else if (windNum < 11) windChars = "Ю-З";
-        else if (windNum < 13) windChars = "З";
-        else windChars = "С-З";
-        builder.append("Ветер: ").append(windChars);
-        builder.append(", ").append(String.format("%.1f", args.getDouble("windSpeed") / 2.23694)).append(" м/с");
-        builder.append(", порывы до: ").append(String.format("%.1f", args.getDouble("windGust") / 2.23694)).append(" м/с");
+        double bearing = args.getDouble("windBearing");
+        double speed = args.getDouble("windSpeed");
+        double gust = args.getDouble("windGust");
+        builder.append("Ветер: ")
+                .append(toDirection(bearing))
+                .append(", ")
+                .append(toMeterPerSecond(speed))
+                .append(", порывы до: ")
+                .append(toMeterPerSecond(gust));
         wind.setText(builder.toString());
         builder.setLength(0);
 
+        // Облачность
         TextView cloudy = view.findViewById(R.id.cloudy);
-        builder.append("Облачность: ").append((int) Math.round(args.getDouble("cloudCover") * 100)).append("%");
+        value = args.getDouble("cloudCover");
+        builder.append("Облачность: ")
+                .append(toPercent(value));
         cloudy.setText(builder.toString());
         builder.setLength(0);
 
+        // Ультрафиолетовый индекс
         TextView uvIndex = view.findViewById(R.id.uvIndex);
-        builder.append("Ультрафилетовый индекс: ").append(args.getDouble("uvIndex"));
+        value = args.getDouble("uvIndex");
+        builder.append("Ультрафилетовый индекс: ")
+                .append(value);
         uvIndex.setText(builder.toString());
         builder.setLength(0);
 
+        // Максимальная температура и время пика
         TextView tempMax = view.findViewById(R.id.tempMax);
         f = args.getDouble("temperatureMax");
-        t = (int) Math.round((f - 32) * 5 / 9);
-        String tString = (t > 0) ? ("+" + String.valueOf(t)) : String.valueOf(t);
-        time = args.getLong("temperatureMaxTime");
-        date = new Date(time * 1000);
-        dateTime = date.toInstant().atZone(ZoneId.of(timeZone));
-        dateString = formatter.format(dateTime);
-        Log.d(TAG, "initViews: max = " + time + " / " + date);
-        //dateString = dateFormat.format(date);
-        builder.append("Максимальная температура: ").append(tString).append("˚С в ")
-                .append(dateString);
+        unixTime = args.getLong("temperatureMaxTime");
+        builder.append("Максимальная температура: ")
+                .append(toCelsius(f))
+                .append(" в ")
+                .append(toFormattedZoneTime(unixTime, timeZone));
         tempMax.setText(builder.toString());
         builder.setLength(0);
 
+        // Минимальная температура и время пика
         TextView tempMin = view.findViewById(R.id.tempMin);
         f = args.getDouble("temperatureMin");
-        t = (int) Math.round((f - 32) * 5 / 9);
-        tString = (t > 0) ? ("+" + String.valueOf(t)) : String.valueOf(t);
-        time = args.getLong("temperatureMinTime");
-        date = new Date(time * 1000);
-        dateTime = date.toInstant().atZone(ZoneId.of(timeZone));
-        dateString = formatter.format(dateTime);
-        Log.d(TAG, "initViews: max = " + time + " / " + date);
-        //dateString = dateFormat.format(date);
-        builder.append("Минимальная температура: ").append(tString).append("˚С в ")
-                .append(dateString);
+        unixTime = args.getLong("temperatureMinTime");
+        builder.append("Минимальная температура: ")
+                .append(toCelsius(f))
+                .append(" в ")
+                .append(toFormattedZoneTime(unixTime, timeZone));
         tempMin.setText(builder.toString());
         builder.setLength(0);
     }
